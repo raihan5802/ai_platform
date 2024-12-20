@@ -1,10 +1,11 @@
+// server.js
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const authRoutes = require('./routes/auth');
-const authMiddleware = require('./middleware/authMiddleware');
 const pool = require('./db');
-
-require('dotenv').config();
+const authRoutes = require('./routes/auth');
+const requestsRoutes = require('./routes/requests');
+const authMiddleware = require('./middleware/authMiddleware');
 
 const app = express();
 
@@ -14,11 +15,11 @@ app.use(express.json());
 
 // Routes
 app.use('/auth', authRoutes);
+app.use('/requests', requestsRoutes);
 
 // Protected dashboard route
 app.get('/dashboard', authMiddleware, async (req, res) => {
   try {
-    // req.user.userId is available from the token
     const userRes = await pool.query('SELECT id, name, email FROM users WHERE id = $1', [req.user.userId]);
     if (userRes.rowCount === 0) return res.status(404).json({ error: 'User not found' });
 
@@ -30,6 +31,5 @@ app.get('/dashboard', authMiddleware, async (req, res) => {
   }
 });
 
-// Start server
 const port = process.env.PORT || 5000;
 app.listen(port, () => console.log(`Backend server running on port ${port}`));

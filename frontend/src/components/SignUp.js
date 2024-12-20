@@ -1,33 +1,69 @@
 import React, { useState } from 'react';
+import { TextField, Button, Box, Typography } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 import API from '../services/api';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 
-const SignUp = ({ onSignUpComplete }) => {
-  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+const SignUp = () => {
+  const [formData, setFormData] = useState({ name:'', email: '', password: '' });
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async(e) => {
     e.preventDefault();
     try {
       await API.post('/auth/signup', formData);
-      // After sign-up, maybe automatically sign in or redirect.
-      onSignUpComplete();
+      alert('Account created successfully. Please sign in.');
+      navigate('/signin');
     } catch (err) {
-      console.error(err);
       alert('Sign-up failed');
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h2>Sign Up</h2>
-      <input name="name" placeholder="Name" onChange={handleChange} required />
-      <input name="email" placeholder="Email" type="email" onChange={handleChange} required />
-      <input name="password" placeholder="Password" type="password" onChange={handleChange} required />
-      <button type="submit">Sign Up</button>
-    </form>
+    <Box component="form" onSubmit={handleSubmit} mt={2}>
+      <Box display="flex" alignItems="center" justifyContent="center" mb={2}>
+        <PersonAddIcon color="primary" style={{ marginRight: '8px' }} />
+        <Typography variant="h5" fontWeight="bold">Sign Up</Typography>
+      </Box>
+      <TextField
+        label="Name"
+        name="name"
+        fullWidth
+        onChange={handleChange}
+        required
+        style={{ marginBottom: '15px' }}
+      />
+      <TextField
+        label="Email"
+        name="email"
+        type="email"
+        fullWidth
+        onChange={handleChange}
+        required
+        style={{ marginBottom: '15px' }}
+      />
+      <TextField
+        label="Password"
+        name="password"
+        type="password"
+        fullWidth
+        onChange={handleChange}
+        required
+        style={{ marginBottom: '20px' }}
+      />
+      <Button variant="contained" color="primary" fullWidth type="submit">
+        Sign Up
+      </Button>
+      <Box textAlign="center" mt={2}>
+        <Typography variant="body2">
+          Already have an account? <a href="/signin" style={{ textDecoration: 'none', color: '#1976d2', fontWeight: 'bold' }}>Sign In</a>
+        </Typography>
+      </Box>
+    </Box>
   );
 };
 
