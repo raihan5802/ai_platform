@@ -9,8 +9,13 @@ const authMiddleware = require('./middleware/authMiddleware');
 
 const app = express();
 
-// Middlewares
-app.use(cors());
+// CORS Configuration
+const corsOptions = {
+  origin: 'http://localhost:3000', // Replace with your frontend URL if different
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Routes

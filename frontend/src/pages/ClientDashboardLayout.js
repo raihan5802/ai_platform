@@ -1,3 +1,4 @@
+// src/pages/ClientDashboardLayout.js
 import React from 'react';
 import { Box } from '@mui/material';
 

@@ -1,9 +1,7 @@
+// src/components/Dashboard/ClientDashboard.js
 import React, { useEffect, useState } from 'react';
 import {
-  AppBar,
-  Toolbar,
   Typography,
-  Button,
   Box,
   Paper,
   Table,
@@ -12,37 +10,43 @@ import {
   TableCell,
   TableRow,
   CircularProgress,
-  Modal,
-  TextField,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
+  Button,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import API from '../services/api';
+import Navbar from '../common/Navbar';
+import CreateRequestModal from './CreateRequestModal';
+import { fetchRequests, addRequest } from '../../controllers/requestsController';
+import { fetchUser } from '../../controllers/userController';
 
 const ClientDashboard = () => {
   const [user, setUser] = useState(null);
   const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [openModal, setOpenModal] = useState(false);
   const [newRequest, setNewRequest] = useState({
     description: '',
     specialRequirements: '',
     deliveryType: 'Regular',
   });
-  const [sortBy, setSortBy] = useState('id'); // Sorting state
+  const [sortBy, setSortBy] = useState('id');
 
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const userRes = await API.get('/dashboard');
-        setUser(userRes.data.user);
+        // Fetch user data
+        const userRes = await fetchUser();
+        setUser(userRes);
 
-        const requestsRes = await API.get('/requests');
-        setRequests(requestsRes.data.requests || []);
+        // Fetch requests
+        const requestsData = await fetchRequests();
+        setRequests(requestsData.requests || []);
+        setLoading(false);
       } catch (err) {
         console.error(err);
         localStorage.removeItem('token');
@@ -72,21 +76,22 @@ const ClientDashboard = () => {
         delivery_type: newRequest.deliveryType,
       };
 
-      const res = await API.post('/requests', payload);
-      setRequests((prev) => [res.data.request, ...prev]);
+      const res = await addRequest(payload);
+      setRequests((prev) => [res.request, ...prev]);
       setNewRequest({ description: '', specialRequirements: '', deliveryType: 'Regular' });
       setOpenModal(false);
     } catch (err) {
       console.error(err);
-      alert('Failed to create request.');
+      alert(err.error || 'Failed to create request.');
     }
   };
 
   const handleSortChange = (e) => {
-    setSortBy(e.target.value);
+    const selectedSort = e.target.value;
+    setSortBy(selectedSort);
 
     const sortedRequests = [...requests];
-    switch (e.target.value) {
+    switch (selectedSort) {
       case 'id':
         sortedRequests.sort((a, b) => a.id - b.id);
         break;
@@ -94,7 +99,11 @@ const ClientDashboard = () => {
         sortedRequests.sort((a, b) => a.status.localeCompare(b.status));
         break;
       case 'date':
-        sortedRequests.sort((a, b) => new Date(a.estimated_delivery_date) - new Date(b.estimated_delivery_date));
+        sortedRequests.sort((a, b) => {
+          const dateA = a.estimated_delivery_date ? new Date(a.estimated_delivery_date) : new Date(0);
+          const dateB = b.estimated_delivery_date ? new Date(b.estimated_delivery_date) : new Date(0);
+          return dateA - dateB;
+        });
         break;
       default:
         break;
@@ -102,32 +111,31 @@ const ClientDashboard = () => {
     setRequests(sortedRequests);
   };
 
-  if (!user) return (
-    <Box display="flex" justifyContent="center" alignItems="center" flexGrow={1}>
-      <CircularProgress />
-    </Box>
-  );
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" flexGrow={1}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box display="flex" flexDirection="column" flexGrow={1}>
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6" style={{ flexGrow: 1 }}>
-            {user.name}'s Client Dashboard
-          </Typography>
-          <Button color="inherit" onClick={handleLogout}>
-            Logout
-          </Button>
-        </Toolbar>
-      </AppBar>
+      <Navbar user={user} onLogout={handleLogout} />
 
       <Box p={3} flexGrow={1} overflow="auto">
-        <Typography variant="h5" gutterBottom>Welcome, {user.name}!</Typography>
-        <Typography variant="body1" gutterBottom>Your email: {user.email}</Typography>
+        <Typography variant="h5" gutterBottom>
+          Welcome, {user.name}!
+        </Typography>
+        <Typography variant="body1" gutterBottom>
+          Your email: {user.email}
+        </Typography>
 
         <Box mt={3}>
           <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-            <Typography variant="h6" gutterBottom>Your Requests</Typography>
+            <Typography variant="h6" gutterBottom>
+              Your Requests
+            </Typography>
             <Box display="flex" alignItems="center">
               <FormControl style={{ width: 200, marginRight: 16 }}>
                 <InputLabel>Sort By</InputLabel>
@@ -176,53 +184,14 @@ const ClientDashboard = () => {
         </Box>
       </Box>
 
-      {/* Modal for creating a new request */}
-      <Modal open={openModal} onClose={handleModalClose}>
-        <Box
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: 400,
-            backgroundColor: 'white',
-            padding: 20,
-            borderRadius: 10,
-          }}
-        >
-          <Typography variant="h6" gutterBottom>Create a New Request</Typography>
-          <TextField
-            label="Description"
-            name="description"
-            fullWidth
-            value={newRequest.description}
-            onChange={handleInputChange}
-            style={{ marginBottom: 15 }}
-          />
-          <TextField
-            label="Special Requirements"
-            name="specialRequirements"
-            fullWidth
-            value={newRequest.specialRequirements}
-            onChange={handleInputChange}
-            style={{ marginBottom: 15 }}
-          />
-          <FormControl fullWidth style={{ marginBottom: 15 }}>
-            <InputLabel>Delivery Type</InputLabel>
-            <Select
-              name="deliveryType"
-              value={newRequest.deliveryType}
-              onChange={handleInputChange}
-            >
-              <MenuItem value="Regular">Regular</MenuItem>
-              <MenuItem value="Express">Express</MenuItem>
-            </Select>
-          </FormControl>
-          <Button variant="contained" color="primary" onClick={handleSubmitRequest} fullWidth>
-            Submit Request
-          </Button>
-        </Box>
-      </Modal>
+      {/* Create Request Modal */}
+      <CreateRequestModal
+        open={openModal}
+        handleClose={handleModalClose}
+        formData={newRequest}
+        handleChange={handleInputChange}
+        handleSubmit={handleSubmitRequest}
+      />
     </Box>
   );
 };

@@ -1,42 +1,37 @@
+// src/components/Auth/SignIn.js
 import React, { useState } from 'react';
 import { TextField, Button, Box, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import API from '../services/api';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import { handleSignin } from '../../controllers/authController';
+import LoginIcon from '@mui/icons-material/Login';
 
-const SignUp = () => {
-  const [formData, setFormData] = useState({ name:'', email: '', password: '' });
+const SignIn = () => {
+  const [formData, setFormData] = useState({ email: '', password: '' });
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSubmit = async(e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await API.post('/auth/signup', formData);
-      alert('Account created successfully. Please sign in.');
-      navigate('/signin');
-    } catch (err) {
-      alert('Sign-up failed');
+      const res = await handleSignin(formData);
+      localStorage.setItem('token', res.token);
+      navigate('/dashboard');
+    } catch (error) {
+      alert(error.error || 'Sign-in failed');
     }
   };
 
   return (
     <Box component="form" onSubmit={handleSubmit} mt={2}>
       <Box display="flex" alignItems="center" justifyContent="center" mb={2}>
-        <PersonAddIcon color="primary" style={{ marginRight: '8px' }} />
-        <Typography variant="h5" fontWeight="bold">Sign Up</Typography>
+        <LoginIcon color="primary" style={{ marginRight: '8px' }} />
+        <Typography variant="h5" fontWeight="bold">
+          Sign In
+        </Typography>
       </Box>
-      <TextField
-        label="Name"
-        name="name"
-        fullWidth
-        onChange={handleChange}
-        required
-        style={{ marginBottom: '15px' }}
-      />
       <TextField
         label="Email"
         name="email"
@@ -56,15 +51,21 @@ const SignUp = () => {
         style={{ marginBottom: '20px' }}
       />
       <Button variant="contained" color="primary" fullWidth type="submit">
-        Sign Up
+        Sign In
       </Button>
       <Box textAlign="center" mt={2}>
         <Typography variant="body2">
-          Already have an account? <a href="/signin" style={{ textDecoration: 'none', color: '#1976d2', fontWeight: 'bold' }}>Sign In</a>
+          Don't have an account?{' '}
+          <a
+            href="/signup"
+            style={{ textDecoration: 'none', color: '#1976d2', fontWeight: 'bold' }}
+          >
+            Sign Up
+          </a>
         </Typography>
       </Box>
     </Box>
   );
 };
 
-export default SignUp;
+export default SignIn;
